@@ -1,2 +1,50 @@
 ---
 # tasks file for rhcos-ami
+
+  # EC2 Import Snapshot will not take a compressed archive like gzip
+- name: Download and Decompress the VMDK file
+  unarchive:
+    src: "{{ base_url }}/{{ ocp_maj_ver }}/{{ ocp_min_ver }}/rhcos-{{ ocp_min_ver }}-x86_64-aws.x86_64.vmdk.gz"
+    dest: "{{ vmdk_tmp }}"
+    remote_src: true
+    validate_certs: true
+
+  # TODO: Hardcoded to put the vmdk into the root of the S3 bucket.
+  #       Update role to support non-root directory level
+- name: Upload VMDK to S3 Bucket
+  s3:
+    aws_access_key: "{{ aws_access_key_id }}"
+    aws_secret_key: "{{ aws_secret_access_key }}"
+    bucket: "{{ s3_bucket }}"
+    object: "{{ vmdk_tmp }}/rhcos-{{ ocp_min_ver }}-x86_64-aws.x86_64.vmdk"
+    dest: "/rhcos-{{ ocp_min_ver }}-x86_64-aws.x86_64.vmdk"
+    mode: put
+    overwrite: true
+
+#- name: Create Import Snapshot Role
+#  when: (create_role | bool)
+
+- name: Create JSON file for use with importing snapshot
+  template:
+    src: containers.json.j2
+    dest: /tmp/containers.json
+
+#  # TODO: Register the resulting snapshot ID for use in subsequent tasks
+#- name: Import Snapshot from RHCOS VMDK in S3
+#
+#- name: Create JSON file for use with registering AMI
+#
+- name: Register AMI against the snapshot
+  ec2_ami:
+    name: newtest
+    state: present
+    architecture: x86_64
+    virtualization_type: hvm
+    root_device_name: /dev/xvda
+    device_mapping:
+      - device_name: /dev/xvda
+        volume_size: 8
+        snapshot_id: snap-xxxxxxxx
+        delete_on_termination: true
+        volume_type: gp2
+

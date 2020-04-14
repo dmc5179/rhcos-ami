@@ -1,2 +1,6 @@
 ---
 # vars file for rhcos-ami
+
+# AWS keys to access the API
+aws_secret_access_key:
+aws_access_key_id:
