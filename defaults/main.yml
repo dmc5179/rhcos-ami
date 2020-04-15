@@ -1,13 +1,21 @@
 ---
 # defaults file for rhcos-ami
 
+# Create the VMImport IAM role which also covers import snapshot
 create_role: false
 
+# Temporary storage location for the OpenShift RHCOS VMDK
 vmdk_tmp: '/tmp'
 
+# OpenShift 4 base url for downloading RHCOS
 base_url: 'https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos'
 
+# AWS S3 Bucket to upload the VMDK to
 s3_bucket: 'redhat-dan'
 
+# Remove the VMDK and containers.json files
+cleanup: false
+
+# OpenShift 4 major and minor version numbers
 ocp_maj_ver: 4.3
 ocp_min_ver: 4.3.8
