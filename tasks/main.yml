@@ -1,25 +1,35 @@
 ---
 # tasks file for rhcos-ami
 
-  # EC2 Import Snapshot will not take a compressed archive like gzip
-- name: Download and Decompress the VMDK file
-  unarchive:
-    src: "{{ base_url }}/{{ ocp_maj_ver }}/{{ ocp_min_ver }}/rhcos-{{ ocp_min_ver }}-x86_64-aws.x86_64.vmdk.gz"
+  # Set a large timeout as it could take awhile to download the file
+- name: Download the VMDK file
+  get_url:
+    url: "{{ base_url }}/{{ ocp_maj_ver }}/{{ ocp_min_ver }}/rhcos-{{ ocp_min_ver }}-x86_64-aws.x86_64.vmdk.gz"
     dest: "{{ vmdk_tmp }}"
-    remote_src: true
-    validate_certs: true
+    mode: '0644'
+    timeout: 600
+  tags:
+    - download
+
+  # EC2 Import Snapshot will not take a compressed archive like gzip
+- name: Decompress the VMDK file
+  command: gunzip "{{ vmdk_tmp }}/rhcos-{{ ocp_min_ver }}-x86_64-aws.x86_64.vmdk.gz"
+  tags:
+    - decompress
 
   # TODO: Hardcoded to put the vmdk into the root of the S3 bucket.
   #       Update role to support non-root directory level
 - name: Upload VMDK to S3 Bucket
-  s3:
+  aws_s3:
     aws_access_key: "{{ aws_access_key_id }}"
     aws_secret_key: "{{ aws_secret_access_key }}"
     bucket: "{{ s3_bucket }}"
-    object: "{{ vmdk_tmp }}/rhcos-{{ ocp_min_ver }}-x86_64-aws.x86_64.vmdk"
-    dest: "/rhcos-{{ ocp_min_ver }}-x86_64-aws.x86_64.vmdk"
+    src: "{{ vmdk_tmp }}/rhcos-{{ ocp_min_ver }}-x86_64-aws.x86_64.vmdk"
+    object: "/rhcos-{{ ocp_min_ver }}-x86_64-aws.x86_64.vmdk"
     mode: put
     overwrite: true
+  tags:
+    - upload
 
 #- name: Create Import Snapshot Role
 #  when: (create_role | bool)
