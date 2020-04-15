@@ -76,6 +76,13 @@
     state: absent
   when: (cleanup_local | bool)
 
+- name: Get the snapshot id
+  command: awk ec2 describe-import-snapshot-tasks \
+           --import-task-ids "{{ import_snapshot.stdout }}" \
+           --output text \
+           --query 'ImportSnapshotTasks[*].SnapshotTaskDetail.SnapshotId'
+  register: snapshot_id
+
 # TODO: There should be an ephemeral device on /dev/xvdb
 - name: Register AMI against the snapshot
   ec2_ami:
@@ -90,7 +97,7 @@
         volume_size: 16
         delete_on_termination: true
         volume_type: gp2
-        snapshot_id: snapshot_id.stdout
+        snapshot_id: "{{ snapshot_id.stdout }}"
   tags:
     - register
 
