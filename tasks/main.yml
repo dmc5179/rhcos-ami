@@ -31,6 +31,13 @@
   tags:
     - upload
 
+- name: Remove the decompressed VMDK from the local system
+  file:
+    path: "{{ vmdk_tmp }}/rhcos-{{ ocp_min_ver }}-x86_64-aws.x86_64.vmdk"
+    state: absent
+  tags:
+    - upload
+
 # This requires that your IAM user is allowed to create the role
 # This step can be skipped if the role already exists
 - name: Create VMImport Role in AWS
@@ -46,14 +53,28 @@
     src: containers.json.j2
     dest: /tmp/containers.json
 
-# TODO: need to poll until the import is complete which might take awhile
 - name: Import Snapshot from RHCOS VMDK in S3
   command: aws ec2 import-snapshot --description "Red Hat CoreOS {{ ocp_min_ver }} VMDK" --disk-container "file:///tmp/containers.json"
   register: import_snapshot
 
+- name: Remove containers.json after import snapshot
+  file:
+    path: /tmp/containers.json
+    state: absent
+
 - name: Register the import snapshot Id
   command: aws ec2 describe-import-snapshot-tasks --output text --query 'ImportSnapshotTasks[*].ImportTaskId'
   register: snapshot_id
+
+# TODO: need to poll until the import is complete which might take awhile
+#       Currently this will poll for 30 minutes?
+#- ec2_snapshot_info:
+#    filters:
+#      snapshot-id: snapshot_id.stdout
+#  register: snapshot_status
+#  until: snapshot_status.
+#  retries: 60
+#  delay: 30
 
 # - debug:
 #    var: import_snapshot
