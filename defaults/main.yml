@@ -1,6 +1,8 @@
 ---
 # defaults file for rhcos-ami
 
+create_role: false
+
 vmdk_tmp: '/tmp'
 
 base_url: 'https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos'
