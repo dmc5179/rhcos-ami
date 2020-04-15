@@ -1,7 +1,7 @@
 ---
 # tasks file for rhcos-ami
 
-  # Set a large timeout as it could take awhile to download the file
+# Set a large timeout as it could take awhile to download the file
 - name: Download the VMDK file
   get_url:
     url: "{{ base_url }}/{{ ocp_maj_ver }}/{{ ocp_min_ver }}/rhcos-{{ ocp_min_ver }}-x86_64-aws.x86_64.vmdk.gz"
@@ -11,14 +11,14 @@
   tags:
     - download
 
-  # EC2 Import Snapshot will not take a compressed archive like gzip
+# EC2 Import Snapshot will not take a compressed archive like gzip
 - name: Decompress the VMDK file
   command: gunzip "{{ vmdk_tmp }}/rhcos-{{ ocp_min_ver }}-x86_64-aws.x86_64.vmdk.gz"
   tags:
     - decompress
 
-  # TODO: Hardcoded to put the vmdk into the root of the S3 bucket.
-  #       Update role to support non-root directory level
+# TODO: Hardcoded to put the vmdk into the root of the S3 bucket.
+#       Update role to support non-root directory level
 - name: Upload VMDK to S3 Bucket
   aws_s3:
     aws_access_key: "{{ lookup('env','AWS_ACCESS_KEY_ID') }}"
@@ -31,8 +31,8 @@
   tags:
     - upload
 
-  # This requires that your IAM user is allowed to create the role
-  # This step can be skipped if the role already exists
+# This requires that your IAM user is allowed to create the role
+# This step can be skipped if the role already exists
 - name: Create VMImport Role in AWS
   import_role:
     name: rubrik-devops.aws-vmimport-role
@@ -46,25 +46,30 @@
     src: containers.json.j2
     dest: /tmp/containers.json
 
-  # TODO: Register the resulting snapshot ID for use in subsequent tasks
 - name: Import Snapshot from RHCOS VMDK in S3
-  command: aws --region {{ lookup('env','AWS_DEFAULT_REGION') }} ec2 import-snapshot --description "Red Hat CoreOS {{ ocp_min_ver }} VMDK" --disk-container "file:///tmp/containers.json"
+  command: aws ec2 import-snapshot --description "Red Hat CoreOS {{ ocp_min_ver }} VMDK" --disk-container "file:///tmp/containers.json"
   register: import_snapshot
 
-- debug:
-    var: import_snapshot
+- name: Register the import snapshot Id
+  command: aws ec2 describe-import-snapshot-tasks --output text --query 'ImportSnapshotTasks[*].ImportTaskId'
+  register: snapshot_id
 
-#- name: Register AMI against the snapshot
-#  ec2_ami:
-#    name: newtest
-#    state: present
-#    architecture: x86_64
-#    virtualization_type: hvm
-#    root_device_name: /dev/xvda
-#    device_mapping:
-#      - device_name: /dev/xvda
-#        volume_size: 8
-#        snapshot_id: snap-xxxxxxxx
-#        delete_on_termination: true
-#        volume_type: gp2
+# - debug:
+#    var: import_snapshot
 
+# TODO This task is not quite right
+- name: Register AMI against the snapshot
+  ec2_ami:
+    name: "rhcos-{{ ocp_min_ver }}-x86_64"
+    state: present
+    architecture: x86_64
+    virtualization_type: hvm
+    root_device_name: /dev/xvda
+    device_mapping:
+      - device_name: /dev/xvda
+        volume_size: 8
+        snapshot_id: "{{ snapshot_id.stdout }}"
+        delete_on_termination: true
+        volume_type: gp2
+  tags:
+    - register
