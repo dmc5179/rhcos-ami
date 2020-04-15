@@ -21,8 +21,8 @@
   #       Update role to support non-root directory level
 - name: Upload VMDK to S3 Bucket
   aws_s3:
-    aws_access_key: "{{ lookup('env','aws_access_key_id') }}"
-    aws_secret_key: "{{ lookup('env','aws_secret_access_key') }}"
+    aws_access_key: "{{ lookup('env','AWS_ACCESS_KEY_ID') }}"
+    aws_secret_key: "{{ lookup('env','AWS_SECRET_ACCESS_KEY') }}"
     bucket: "{{ s3_bucket }}"
     src: "{{ vmdk_tmp }}/rhcos-{{ ocp_min_ver }}-x86_64-aws.x86_64.vmdk"
     object: "/rhcos-{{ ocp_min_ver }}-x86_64-aws.x86_64.vmdk"
@@ -48,7 +48,7 @@
 
   # TODO: Register the resulting snapshot ID for use in subsequent tasks
 - name: Import Snapshot from RHCOS VMDK in S3
-  command: aws ec2 import-snapshot --description "Red Hat CoreOS {{ ocp_min_ver }} VMDK" --disk-container "file:///tmp/containers.json"
+  command: aws --region {{ lookup('env','AWS_DEFAULT_REGION') }} ec2 import-snapshot --description "Red Hat CoreOS {{ ocp_min_ver }} VMDK" --disk-container "file:///tmp/containers.json"
   register: import_snapshot
 
 - debug:
