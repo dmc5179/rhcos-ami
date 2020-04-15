@@ -46,6 +46,7 @@
     src: containers.json.j2
     dest: /tmp/containers.json
 
+# TODO: need to poll until the import is complete which might take awhile
 - name: Import Snapshot from RHCOS VMDK in S3
   command: aws ec2 import-snapshot --description "Red Hat CoreOS {{ ocp_min_ver }} VMDK" --disk-container "file:///tmp/containers.json"
   register: import_snapshot
@@ -57,7 +58,6 @@
 # - debug:
 #    var: import_snapshot
 
-# TODO This task is not quite right
 - name: Register AMI against the snapshot
   ec2_ami:
     name: "rhcos-{{ ocp_min_ver }}-x86_64"
@@ -65,11 +65,15 @@
     architecture: x86_64
     virtualization_type: hvm
     root_device_name: /dev/xvda
+    wait: true
     device_mapping:
       - device_name: /dev/xvda
-        volume_size: 8
-        snapshot_id: "{{ snapshot_id.stdout }}"
+        volume_size: 16
         delete_on_termination: true
         volume_type: gp2
+# TODO: There should be an ephemeral device on /dev/xvdb
+#       but the module doesn't appear to support that yet.
+#      - device_name: /dev/xvdb
+#        no_device: True
   tags:
     - register
