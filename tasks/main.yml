@@ -35,8 +35,7 @@
   file:
     path: "{{ vmdk_tmp }}/rhcos-{{ ocp_min_ver }}-x86_64-aws.x86_64.vmdk"
     state: absent
-  tags:
-    - upload
+  when: (cleanup_local | bool)
 
 # This requires that your IAM user is allowed to create the role
 # This step can be skipped if the role already exists
@@ -54,30 +53,21 @@
     dest: /tmp/containers.json
 
 - name: Import Snapshot from RHCOS VMDK in S3
-  command: aws ec2 import-snapshot --description "Red Hat CoreOS {{ ocp_min_ver }} VMDK" --disk-container "file:///tmp/containers.json"
+  command: aws ec2 import-snapshot --description "Red Hat CoreOS {{ ocp_min_ver }} VMDK" --disk-container "file:///tmp/containers.json" --output text --query 'ImportTaskId'
   register: import_snapshot
+
+- name: Wait for snapshot import to complete
+  command: aws ec2 describe-import-snapshot-tasks --import-task-ids "{{ import_snapshot.stdout }}" --output text --query 'ImportSnapshotTasks[*].SnapshotTaskDetail.Status'
+  register: snapshot_status
+  until: snapshot_status.stdout == 'completed'
+  retries: 60
+  delay: 30
 
 - name: Remove containers.json after import snapshot
   file:
     path: /tmp/containers.json
     state: absent
-
-- name: Register the import snapshot Id
-  command: aws ec2 describe-import-snapshot-tasks --output text --query 'ImportSnapshotTasks[*].ImportTaskId'
-  register: snapshot_id
-
-# TODO: need to poll until the import is complete which might take awhile
-#       Currently this will poll for 30 minutes?
-#- ec2_snapshot_info:
-#    filters:
-#      snapshot-id: snapshot_id.stdout
-#  register: snapshot_status
-#  until: snapshot_status.
-#  retries: 60
-#  delay: 30
-
-# - debug:
-#    var: import_snapshot
+  when: (cleanup_local | bool)
 
 - name: Register AMI against the snapshot
   ec2_ami:
@@ -92,9 +82,20 @@
         volume_size: 16
         delete_on_termination: true
         volume_type: gp2
+        snapshot_id: snapshot_id.stdout
 # TODO: There should be an ephemeral device on /dev/xvdb
 #       but the module doesn't appear to support that yet.
 #      - device_name: /dev/xvdb
 #        no_device: True
   tags:
     - register
+
+- name: Cleanup the VMDK file on S3
+  aws_s3:
+    aws_access_key: "{{ lookup('env','AWS_ACCESS_KEY_ID') }}"
+    aws_secret_key: "{{ lookup('env','AWS_SECRET_ACCESS_KEY') }}"
+    bucket: "{{ s3_bucket }}"
+    object: "/rhcos-{{ ocp_min_ver }}-x86_64-aws.x86_64.vmdk"
+    mode: delete
+  when: (cleanup_s3 | bool)
+
