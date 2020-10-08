@@ -46,6 +46,8 @@
     s3_bucket_name: "{{ s3_bucket }}"
     s3_bucket_arn: "arn:aws:s3:::{{  s3_bucket }}"
   when: (create_role | bool)
+  tags:
+    - create_role
 
 - name: Create JSON file for use with importing snapshot
   template:
