@@ -1,2 +1,6 @@
 ---
 # vars file for rhcos-ami
+
+device_name: '/dev/xvda'
+volume_size: 16
+volume_type: 'gp2'

@@ -7,20 +7,19 @@ create_role: true
 # Temporary storage location for the OpenShift RHCOS VMDK
 vmdk_tmp: '/tmp'
 
+rhcos_ver: '4.5.6'
+
 # OpenShift 4 base url for downloading RHCOS
-base_url: 'https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos'
+base_url: 'https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/{{ rhcos_ver[:3] }}/{{ rhcos_ver[:5] }}'
+pre_release_url: 'https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/pre-release/{{ rhcos_ver }}'
 
 # AWS S3 Bucket to upload the VMDK to
-s3_bucket: 'redhat-dan'
+s3_bucket: 'danclark-govcloud'
 
 # Remove the VMDK and containers.json files
 cleanup_local: false
 # Remove the VMDK from S3 after the AMI is registered
 cleanup_s3: false
-
-# OpenShift 4 major and minor version numbers
-ocp_maj_ver: 4.3
-ocp_min_ver: 4.3.8
 
 # S3 ARNs are different for some regions
 # Commercial ARN

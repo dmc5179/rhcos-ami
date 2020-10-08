@@ -1,10 +1,16 @@
 ---
 # tasks file for rhcos-ami
 
+- name: Set baseurl if using nightly builds
+  set_fact:
+    base_url: '{{ pre_release_url }}'
+  when:
+    - rhcos_ver | length > 5
+
 # Set a large timeout as it could take awhile to download the file
 - name: Download the VMDK file
   get_url:
-    url: "{{ base_url }}/{{ ocp_maj_ver }}/{{ ocp_min_ver }}/rhcos-{{ ocp_min_ver }}-x86_64-aws.x86_64.vmdk.gz"
+    url: "{{ base_url }}/rhcos-{{ rhcos_ver }}-x86_64-aws.x86_64.vmdk.gz"
     dest: "{{ vmdk_tmp }}"
     mode: '0644'
     timeout: 600
@@ -13,7 +19,7 @@
 
 # EC2 Import Snapshot will not take a compressed archive like gzip
 - name: Decompress the VMDK file
-  command: gunzip "{{ vmdk_tmp }}/rhcos-{{ ocp_min_ver }}-x86_64-aws.x86_64.vmdk.gz"
+  command: gunzip "{{ vmdk_tmp }}/rhcos-{{ rhcos_ver }}-x86_64-aws.x86_64.vmdk.gz"
   tags:
     - decompress
 
@@ -24,8 +30,8 @@
     aws_access_key: "{{ lookup('env','AWS_ACCESS_KEY_ID') }}"
     aws_secret_key: "{{ lookup('env','AWS_SECRET_ACCESS_KEY') }}"
     bucket: "{{ s3_bucket }}"
-    src: "{{ vmdk_tmp }}/rhcos-{{ ocp_min_ver }}-x86_64-aws.x86_64.vmdk"
-    object: "/rhcos-{{ ocp_min_ver }}-x86_64-aws.x86_64.vmdk"
+    src: "{{ vmdk_tmp }}/rhcos-{{ rhcos_ver }}-x86_64-aws.x86_64.vmdk"
+    object: "/rhcos-{{ rhcos_ver }}-x86_64-aws.x86_64.vmdk"
     mode: put
     overwrite: true
   tags:
@@ -33,7 +39,7 @@
 
 - name: Remove the decompressed VMDK from the local system
   file:
-    path: "{{ vmdk_tmp }}/rhcos-{{ ocp_min_ver }}-x86_64-aws.x86_64.vmdk"
+    path: "{{ vmdk_tmp }}/rhcos-{{ rhcos_ver }}-x86_64-aws.x86_64.vmdk"
     state: absent
   when: (cleanup_local | bool)
 
@@ -57,7 +63,7 @@
 - name: Import Snapshot from RHCOS VMDK in S3
   command: |
     aws ec2 import-snapshot \
-    --description "Red Hat CoreOS {{ ocp_min_ver }} VMDK" \
+    --description "Red Hat CoreOS {{ rhcos_ver }} VMDK" \
     --disk-container "file:///tmp/containers.json" \
     --output text --query 'ImportTaskId'
   register: import_snapshot
@@ -88,17 +94,17 @@
 # TODO: There should be an ephemeral device on /dev/xvdb
 - name: Register AMI against the snapshot
   ec2_ami:
-    name: "rhcos-{{ ocp_min_ver }}-x86_64"
+    name: "rhcos-{{ rhcos_ver }}-x86_64"
     state: present
     architecture: x86_64
     virtualization_type: hvm
-    root_device_name: /dev/xvda
+    root_device_name: '{{ device_name }}'
     wait: true
     device_mapping:
-      - device_name: /dev/xvda
-        volume_size: 16
+      - device_name: '{{ device_name }}'
+        volume_size: '{{ volume_size }}'
         delete_on_termination: true
-        volume_type: gp2
+        volume_type: '{{ volume_type }}'
         snapshot_id: "{{ snapshot_id.stdout }}"
   tags:
     - register
@@ -108,6 +114,6 @@
     aws_access_key: "{{ lookup('env','AWS_ACCESS_KEY_ID') }}"
     aws_secret_key: "{{ lookup('env','AWS_SECRET_ACCESS_KEY') }}"
     bucket: "{{ s3_bucket }}"
-    object: "/rhcos-{{ ocp_min_ver }}-x86_64-aws.x86_64.vmdk"
+    object: "/rhcos-{{ rhcos_ver }}-x86_64-aws.x86_64.vmdk"
     mode: delete
   when: (cleanup_s3 | bool)
