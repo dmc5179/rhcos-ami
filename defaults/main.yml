@@ -8,7 +8,7 @@ create_role: true
 vmdk_tmp: '/tmp'
 
 # OpenShift 4 base url for downloading RHCOS
-base_url: 'https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos'
+base_url: 'https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos'
 
 # AWS S3 Bucket to upload the VMDK to
 s3_bucket: 'redhat-dan'
