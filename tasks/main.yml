@@ -33,7 +33,7 @@
     src: "{{ vmdk_tmp }}/rhcos-{{ rhcos_ver }}-x86_64-aws.x86_64.vmdk"
     object: "/rhcos-{{ rhcos_ver }}-x86_64-aws.x86_64.vmdk"
     mode: put
-    overwrite: true
+    overwrite: 'true'
   tags:
     - upload
 
@@ -98,6 +98,7 @@
     state: present
     architecture: x86_64
     virtualization_type: hvm
+    enhanced_networking: '{{ ena_supported }}'
     root_device_name: '{{ device_name }}'
     wait: true
     device_mapping:

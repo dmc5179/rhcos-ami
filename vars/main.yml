@@ -4,3 +4,4 @@
 device_name: '/dev/xvda'
 volume_size: 16
 volume_type: 'gp2'
+ena_supported: true
