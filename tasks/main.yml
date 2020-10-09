@@ -42,6 +42,8 @@
     path: "{{ vmdk_tmp }}/rhcos-{{ rhcos_ver }}-x86_64-aws.x86_64.vmdk"
     state: absent
   when: (cleanup_local | bool)
+  tags:
+    - cleanup
 
 # This requires that your IAM user is allowed to create the role
 # This step can be skipped if the role already exists
@@ -83,6 +85,8 @@
     path: /tmp/containers.json
     state: absent
   when: (cleanup_local | bool)
+  tags:
+    - cleanup
 
 - name: Get the snapshot id
   command: aws ec2 describe-import-snapshot-tasks \
@@ -116,5 +120,7 @@
     aws_secret_key: "{{ lookup('env','AWS_SECRET_ACCESS_KEY') }}"
     bucket: "{{ s3_bucket }}"
     object: "/rhcos-{{ rhcos_ver }}-x86_64-aws.x86_64.vmdk"
-    mode: delete
+    mode: delobj
   when: (cleanup_s3 | bool)
+  tags:
+    - cleanup
