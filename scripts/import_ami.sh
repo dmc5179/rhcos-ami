@@ -12,6 +12,9 @@ S3ARN="arn:aws:s3"
 # Path to RHCOS VMDK in the S3 Bucket
 OBJECT_PATH="rhcos-${RHCOS_VERSION}-x86_64-aws.x86_64.vmdk"
 
+# Extra options for the AWS command line line custom API endpoints
+#AWS_OPTS='--endpoint-url '
+
 cat << EOF > containers.json
 {
     "Description": "Red Hat CoreOS ${RHCOS_VERSION} VMDK",
@@ -23,7 +26,7 @@ cat << EOF > containers.json
 }
 EOF
 
-RET=$(aws ec2 import-snapshot --description "Red Hat CoreOS ${RHCOS_VERSION} VMDK" --disk-container "file://./containers.json")
+RET=$(aws ${AWS_OPTS} ec2 import-snapshot --description "Red Hat CoreOS ${RHCOS_VERSION} VMDK" --disk-container "file://./containers.json")
 IMPORT_ID=$( echo "${RET}" | jq -r '.ImportTaskId')
 
 IMPORT_STATUS='active'
@@ -31,7 +34,7 @@ COUNTER=100
 until [[ ${IMPORT_STATUS} == "completed" || ${COUNTER} -eq 0 ]]
 do
   echo "Waiting for snapshot import to complete: ${COUNTER} tries remaining"
-  IMPORT_STATUS=$(aws ec2 describe-import-snapshot-tasks --import-tasks-ids ${IMPORT_ID} | jq -r '.ImportSnapshotTasks.SnapshotTaskDetail.Status')
+  IMPORT_STATUS=$(aws ${AWS_OPTS} ec2 describe-import-snapshot-tasks --import-tasks-ids ${IMPORT_ID} | jq -r '.ImportSnapshotTasks.SnapshotTaskDetail.Status')
   let COUNTER-=1
   sleep 10
 done
@@ -42,9 +45,9 @@ then
   exit 1
 fi
 
-SNAP_ID=$(aws ec2 describe-import-snapshot-tasks --import-tasks-ids ${IMPORT_ID} | jq -r '.ImportSnapshotTasks.SnapshotTaskDetail.SnapshotId')
+SNAP_ID=$(aws ${AWS_OPTS} ec2 describe-import-snapshot-tasks --import-tasks-ids ${IMPORT_ID} | jq -r '.ImportSnapshotTasks.SnapshotTaskDetail.SnapshotId')
 
-aws ec2 register-image --name "Red Hat CoreOS ${RHCOS_VERSION}" \
+aws ${AWS_OPTS} ec2 register-image --name "Red Hat CoreOS ${RHCOS_VERSION}" \
     --block-device-mappings \
 "[{\"DeviceName\": \"/dev/xvda\",\"Ebs\":{\"VolumeSize\":16,\"VolumeType\":\"gp2\",\"DeleteOnTermination\":true,\"SnapshotId\":\"snap-01dc35d89af6144e0\"}}]" \
     --root-device-name '/dev/xvda' --architecture x86_64 \
