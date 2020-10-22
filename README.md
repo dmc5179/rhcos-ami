@@ -33,11 +33,13 @@ A list of other roles hosted on Galaxy should go here, plus any details in regar
 Example Playbook
 ----------------
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
+- Example run of the playbook passing in vars
+```
+ansible-playbook -i tests/inventory \
+  --extra-vars "rhcos_ver=4.6.0-0.nightly-2020-09-29-013537 s3_arn_prefix=arn:aws-us-gov:s3 s3_bucket=mybucket" \
+  tests/test.yml
+```
 
-    - hosts: servers
-      roles:
-         - { role: username.rolename, x: 42 }
 
 License
 -------

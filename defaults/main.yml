@@ -7,6 +7,7 @@ create_role: true
 # Temporary storage location for the OpenShift RHCOS VMDK
 vmdk_tmp: '/tmp'
 
+#rhcos_ver: '4.6.0-0.nightly-2020-09-29-013537'
 rhcos_ver: '4.5.6'
 
 # OpenShift 4 base url for downloading RHCOS
@@ -14,7 +15,7 @@ base_url: 'https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhc
 pre_release_url: 'https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/pre-release/{{ rhcos_ver }}'
 
 # AWS S3 Bucket to upload the VMDK to
-s3_bucket: 'danclark-govcloud'
+s3_bucket: 'mybucket'
 
 # Remove the VMDK and containers.json files
 cleanup_local: false
@@ -23,6 +24,6 @@ cleanup_s3: false
 
 # S3 ARNs are different for some regions
 # Commercial ARN
-#s3_arn_prefix: 'arn:aws:s3'
+s3_arn_prefix: 'arn:aws:s3'
 # GovCloud ARN
-s3_arn_prefix: 'arn:aws-us-gov:s3'
+#s3_arn_prefix: 'arn:aws-us-gov:s3'

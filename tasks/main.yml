@@ -5,7 +5,7 @@
   set_fact:
     base_url: '{{ pre_release_url }}'
   when:
-    - rhcos_ver | length > 5
+    - rhcos_ver | length > 7
 
 # Set a large timeout as it could take awhile to download the file
 - name: Download the VMDK file
