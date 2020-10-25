@@ -27,8 +27,6 @@
 #       Update role to support non-root directory level
 - name: Upload VMDK to S3 Bucket
   aws_s3:
-    aws_access_key: "{{ lookup('env','AWS_ACCESS_KEY_ID') }}"
-    aws_secret_key: "{{ lookup('env','AWS_SECRET_ACCESS_KEY') }}"
     bucket: "{{ s3_bucket }}"
     src: "{{ vmdk_tmp }}/rhcos-{{ rhcos_ver }}-x86_64-aws.x86_64.vmdk"
     object: "/rhcos-{{ rhcos_ver }}-x86_64-aws.x86_64.vmdk"
@@ -116,8 +114,6 @@
 
 - name: Cleanup the VMDK file on S3
   aws_s3:
-    aws_access_key: "{{ lookup('env','AWS_ACCESS_KEY_ID') }}"
-    aws_secret_key: "{{ lookup('env','AWS_SECRET_ACCESS_KEY') }}"
     bucket: "{{ s3_bucket }}"
     object: "/rhcos-{{ rhcos_ver }}-x86_64-aws.x86_64.vmdk"
     mode: delobj
