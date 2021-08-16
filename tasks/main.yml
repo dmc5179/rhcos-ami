@@ -29,7 +29,7 @@
   aws_s3:
     bucket: "{{ s3_bucket }}"
     src: "{{ vmdk_tmp }}/rhcos-{{ rhcos_ver }}-x86_64-aws.x86_64.vmdk"
-    object: "/rhcos-{{ rhcos_ver }}-x86_64-aws.x86_64.vmdk"
+    object: "rhcos-{{ rhcos_ver }}-x86_64-aws.x86_64.vmdk"
     mode: put
     overwrite: 'true'
   tags:
@@ -55,16 +55,22 @@
   tags:
     - create_role
 
+- name: Create temporary file
+  ansible.builtin.tempfile:
+    state: file
+    suffix: snapshot
+  register: tempfile_1
+
 - name: Create JSON file for use with importing snapshot
   template:
     src: containers.json.j2
-    dest: /tmp/containers.json
+    dest: '{{ tempfile_1.path }}'
 
 - name: Import Snapshot from RHCOS VMDK in S3
   command: |
     aws ec2 import-snapshot \
     --description "Red Hat CoreOS {{ rhcos_ver }} VMDK" \
-    --disk-container "file:///tmp/containers.json" \
+    --disk-container "file://{{ tempfile_1.path }}" \
     --output text --query 'ImportTaskId'
   register: import_snapshot
 
@@ -78,9 +84,9 @@
   retries: 60
   delay: 30
 
-- name: Remove containers.json after import snapshot
+- name: Remove temp file after import snapshot
   file:
-    path: /tmp/containers.json
+    path: '{{ tempfile_1.path }}'
     state: absent
   when: (cleanup_local | bool)
   tags:

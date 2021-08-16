@@ -2,13 +2,13 @@
 # defaults file for rhcos-ami
 
 # Create the VMImport IAM role which also covers import snapshot
-create_role: true
+create_role: false
 
 # Temporary storage location for the OpenShift RHCOS VMDK
 vmdk_tmp: '/tmp'
 
 #rhcos_ver: '4.6.0-0.nightly-2020-09-29-013537'
-rhcos_ver: '4.5.6'
+rhcos_ver: '4.8.2'
 
 # OpenShift 4 base url for downloading RHCOS
 base_url: 'https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/{{ rhcos_ver[:3] }}/{{ rhcos_ver[:5] }}'
@@ -18,9 +18,9 @@ pre_release_url: 'https://mirror.openshift.com/pub/openshift-v4/x86_64/dependenc
 s3_bucket: 'mybucket'
 
 # Remove the VMDK and containers.json files
-cleanup_local: false
+cleanup_local: true
 # Remove the VMDK from S3 after the AMI is registered
-cleanup_s3: false
+cleanup_s3: true
 
 # S3 ARNs are different for some regions
 # Commercial ARN
